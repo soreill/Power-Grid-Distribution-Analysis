@@ -1,0 +1,504 @@
+---
+title: "Power Grid Distribution Analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(igraph)
+#install.packages("multiplex")
+library(multiplex)
+library(dplyr)
+
+getwd()
+#powerGrid <- read.gml("power.gml", as = c("srt", "array"), directed = FALSE, coords = FALSE)
+
+#creating a network suing power grid data
+powerGrid=graph.data.frame(powerGrid, directed = FALSE, vertices= NULL)
+print(powerGrid)
+plot(powerGrid, vertex.label= NA)
+
+
+#Not weighted 
+is_weighted(powerGrid)
+
+#E(powerGrid)$weight <- 1
+#powerGrid <- simplify(powerGrid, edge.attr.comb=(weight="sum"), remove.loops=FALSE)
+
+#sort(E(powerGrid)$weight, decreasing = FALSE)
+
+#Does not show much separation or trend using fruchterman.reingold this is the ideal form of visualization
+plot(powerGrid,vertex.size = 3, vertex.label= NA, layout=layout.fruchterman.reingold,  vertex.color= "green", edge.color = "black")
+
+#SPlotting with sized changed for different values, but commented out because offers limited information
+#gridDegree <- degree(powerGrid)
+#V(powerGrid)$size <- gridEigen
+#V(powerGrid)$color <- gridDegree
+#plot(powerGrid, vertex.label= NA, layout=layout.fruchterman.reingold, edge.color = "black")
+
+#Does not show much separation or trend using circle
+plot(powerGrid,  vertex.size=3, vertex.label= NA, layout=layout.circle,  vertex.color= "green", edge.color = "black")
+
+#Does not show much separation or trend using sphere
+plot(powerGrid,  vertex.size=3, vertex.label= NA, layout=layout.sphere,  vertex.color= "green", edge.color = "black")
+
+#Does not show much separation or trend using random
+plot(powerGrid,  vertex.size=3, vertex.label= NA, layout=layout.random,  vertex.color= "green", edge.color = "black")
+
+#Edges 
+ecount(powerGrid)
+#Vertices 
+vcount(powerGrid)
+
+#Get betweenness centrality scores for graph
+betweenness_Var <- betweenness(powerGrid, directed = FALSE, normalized = TRUE)
+mean(betweenness_Var)
+# WE OBSERVE A MEAN BETWEENNESS CENTRALITY VALUE OF .0036, which when compared to the equivalent values in social networks we have studied, is very low.
+# Betweenness centrality represents the extent to which a node lies on paths between any other 2 nodes. Within the context of an infrastructure network, its logical that we would observe lower values than in a social network because a power grid will likely have far less nodes and edges than a social network due to the cost of adding every additional node in a power grid. It's expensive and time consuming to install more power lines and generators, whereas social media users can add a friend to their digital social network with the click of a button.
+
+
+# Get overall Global Clustering Coefficients for simplified graph
+transitivity(powerGrid)
+
+#Calculating local clustering coeffcient 
+gridClust <- transitivity(powerGrid, type = c("local"), vids = NULL, weights = NULL, isolates = c("zero"))
+mean(gridClust)
+#Overall clustering is greater than average of local clustering
+
+#Degree Centrality Correlation of 0.29 code from Ali Tafti's Session 5 PowerPoint
+assortativity(powerGrid, V(powerGrid))
+
+# We observe a clustering coefficient of .10, which when compared to the equivalent values of social networks we have studied (values around .4 or higher in a couple cases), is very low. 
+# this makes sense, because the clustering coefficient is a node-centric measurement which explains what fraction of any pair of node's friends know each other, and in the case of a power grid, the principles of triadic closure won't apply - in that if two grid nodes having a common friend DOES NOT make them likely to form an edge.
+
+# OUR Network is strongly connected!
+is.connected(powerGrid)
+
+#Diameter of powerGrid
+diameter(powerGrid)
+
+#Closeness centrality of the graph
+gridClose <- closeness(powerGrid, vids = V(powerGrid))
+print(gridClose)
+
+#Calculating the Eigen Vector Centrality.  This shows how influential a node is on the entire network
+gridEigen <- evcent(powerGrid)
+gridEigen <- gridEigen$vector
+powerGrid$eigen <- gridEigen
+
+
+#Highlighting nodes with eigen vectors greater than the median
+bigPG <- V(powerGrid)[gridEigen > median(gridEigen)]
+length(bigPG)
+
+V(powerGrid)[ bigPG ]$size <- 10
+V(powerGrid)[ bigPG ]$color <- "yellow"
+plot(powerGrid, vertex.label= NA,vertex.size=3, layout=layout.fruchterman.reingold, edge.color = "black")
+#Resetting the graph
+V(powerGrid)$size = 3
+V(powerGrid)$color = "black"
+#Highlighting nodes with eigen vectors greater than the mean
+bigPG <- V(powerGrid)[gridEigen > mean(gridEigen)]
+length(bigPG)
+V(powerGrid)[ bigPG ]$size <- 10
+V(powerGrid)[ bigPG ]$color <- "yellow"
+plot(powerGrid, vertex.label= NA,vertex.size=3, layout=layout.fruchterman.reingold, edge.color = "black")
+#Resetting the graph
+V(powerGrid)$size = 3
+V(powerGrid)$color = "black"
+
+
+#calculating the Degree of each node
+gridDegree <- degree(powerGrid)
+mean(gridDegree)
+print(gridDegree)
+length(gridDegree)
+
+#Resetting graph
+V(powerGrid)$size = 3
+V(powerGrid)$color = "black"
+
+#Highlighting nodes with degree greater than the median
+bigPG <- V(powerGrid)[gridDegree > median(gridDegree)]
+V(powerGrid)[ bigPG ]$color <- "yellow"
+plot(powerGrid, vertex.label= NA,layout=layout.fruchterman.reingold, edge.color = "black")
+#Resetting the graph
+V(powerGrid)$size = 3
+V(powerGrid)$color = "black"
+#Highlighting nodes with degree greater than the mean
+bigPG <- V(powerGrid)[gridDegree > mean(gridDegree)]
+V(powerGrid)[ bigPG ]$color <- "yellow"
+plot(powerGrid, vertex.label= NA,vertex.size=3, layout=layout.fruchterman.reingold, edge.color = "black")
+#Resetting the graph
+V(powerGrid)$size = 3
+V(powerGrid)$color = "black"
+
+distance_table(powerGrid)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+#Used http://www.sthda.com/english/wiki/r-plot-pch-symbols-the-different-point-shapes-available-in-r for scatter plot visuals
+
+#####Plotting node degrees versus their betweeness
+plot(gridDegree,betweenness_Var, col="darkgreen", pch = 1, cex=1.5, xlab="Degree", ylab="Betweeness")
+plot(log(gridDegree), log(betweenness_Var), , col="darkgreen", pch = 1, cex=1.5, xlab="Degree", ylab="Betweeness")
+#Finding Linear regression line 
+LinRegBet <- lm(gridDegree ~ betweenness_Var)
+print(LinRegBet)
+#There is not a clear or obvious trend seen in the original graph but there does seem to be slight upward trend between betweeness and degree
+#The linear regression line though shows a positive correlation betweeness and degree
+
+#####Plotting node degrees versus their CLoseness
+plot(gridDegree,gridClose, col="darkgreen", pch = 1, cex=1.5, xlab="Degree", ylab="Closeness")
+plot(log(gridDegree), log(gridClose), , col="darkgreen", pch = 1, cex=1.5, xlab="Log of Degree", ylab="Log of Closeness")
+#Again no obvious graphical trend between the closeness of a node and its degree
+#The linear regression line has a coefficient only slightly above 0 showing very little trend between variables
+
+####Plotting Betweenness and against transitivity
+plot(gridClust, betweenness_Var,  col="darkgreen", pch = 1, cex=1.5, xlab="Clustering Coefficent", ylab="Betweenness")
+plot(log(gridClust), log(betweenness_Var) , col="darkgreen", pch = 1, cex=1.5, xlab="Log of Clustering Coefficent", ylab="Log of Betweenness")
+
+####Plotting degree centrality vs clustering coefficent
+plot(gridDegree,gridClust ,  col="darkgreen", pch = 1, cex=1.5, xlab="Degree", ylab="Clustering Coefficent")
+plot(log(gridClust), log(gridDegree) , col="darkgreen", pch = 1, cex=1.5, xlab="Log of Clustering Coefficent", ylab="Log of Degree")
+
+####Plotting Betweenness and against Closeness
+plot(gridClose, betweenness_Var, col="darkgreen", pch = 1, cex=1.5, xlab="Closeness", ylab="Betweenness")
+plot(log(gridClose), log(betweenness_Var), col="darkgreen", pch = 1, cex=1.5, xlab="Log of Closeness", ylab="Log of Betweenness")
+
+
+####Plotting eigenvector centrality and against gridDegree
+plot(gridEigen,gridDegree, col="darkgreen", pch = 1, cex=1.5, xlab="Eigenvector Centrality", ylab="Degree")
+plot(log(gridEigen),log(gridDegree), col="darkgreen", pch = 1, cex=1.5, xlab="Log of Eigenvector Centrality", ylab="Log of Degree")
+#Obvious positive relationship between eigenvectors and degree
+
+####Plotting Betweenness and against eigenvector centrality
+plot(gridEigen, betweenness_Var, col="darkgreen", pch = 1, cex=1.5, xlab="Eigenvector Centrality", ylab="Betweenness")
+plot(log(gridEigen), log(betweenness_Var), col="darkgreen", pch = 1, cex=1.5, xlab="Log of Eigenvector Centrality", ylab="Log of Betweenness")
+
+####Plotting eigenvector centrality and against transitivity
+plot(gridEigen, gridClust, col="darkgreen", pch = 1, cex=1.5, xlab="Eigenvector Centrality", ylab="Clustering Coefficient")
+plot( log(gridEigen), log(gridClust), col="darkgreen", pch = 1, cex=1.5, xlab="Log of Eigenvector Centrality", ylab="Log of Clustering Coefficient")
+
+
+####Plotting eigenvector centrality and against closeness
+plot(gridEigen, gridClose, col="darkgreen", pch = 1, cex=1.5, xlab="Eigenvector Centrality", ylab="Closeness")
+plot( log(gridEigen), log(gridClose), col="darkgreen", pch = 1, cex=1.5, xlab="Log of Eigenvector Centrality", ylab="Log of Closeness")
+
+
+#Linear Regression for Eigenvectors
+LinRegEigen <- lm(gridEigen ~ gridClose + betweenness_Var + gridClust)
+print(LinRegEigen)
+summary(LinRegEigen)
+#R squared is incredibly low
+
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+simplePowerGrid <- simplify(powerGrid, remove.multiple = TRUE, remove.loops = TRUE)
+
+#Code for Community detection found from Lab assignment 3 from Ali Tafi IDS 564 class
+
+#Creating function for community significance from Ali Tafti's sample code for Lab Assignment 3
+community.significance.test <- function(graph, vs, ...) {
+  if (is.directed(graph)) stop("This+ method requires an undirected graph")
+  subgraph <- induced.subgraph(graph, vs)
+  in.degrees <- degree(subgraph)
+  # Total degree among nodes in the vs list, minus the degree within the subgraph 
+  out.degrees <- degree(graph, vs) - in.degrees
+  wilcox.test(in.degrees, out.degrees, ...)
+}
+
+#Cluster Walktrap
+cw <- cluster_walktrap(simplePowerGrid)
+c.m <- membership(cw)
+
+#Turning community table into data frame
+cwDF <- as.data.frame(table(c.m,useNA = c("no")))
+
+#Loop identifies significance, degree, and eigen values
+sig_value <- vector()
+comDegree <- vector()
+comEigen <- vector()
+for( i in 1: length(cw)){
+  v_comp <- V(simplePowerGrid)[c.m==i]
+  cst <- community.significance.test(simplePowerGrid, v_comp)
+  sig_value <- append(sig_value,cst$p.value)
+  sub_graph <- induced_subgraph(simplePowerGrid,v_comp)
+  deg <- mean(degree(sub_graph))
+  comDegree <- append(comDegree,deg)
+  eig <- evcent(sub_graph)
+  eig <- mean(eig$vector)
+  comEigen <- append(comEigen,eig)
+}
+
+#Adding values to the dataframe
+cwDF$significance <- sig_value
+cwDF$Average_Degree_Centrality <- comDegree
+cwDF$Average_Eigen_Centrality <- comEigen
+
+print(cwDF)
+
+#Ordering Dataframe by degree centrality
+cwDF[order(-cwDF$Average_Degree_Centrality),]
+#Ordering Dataframe by eigen centrality
+cwDF[order(-cwDF$Average_Eigen_Centrality),]
+#Plotting the average degree centrality vs eigen centrality
+plot(cwDF$Average_Degree_Centrality,cwDF$Average_Eigen_Centrality)
+#Plotting eigen centrality by community
+plot(cwDF$c.m,cwDF$Average_Eigen_Centrality)
+#Plotting the community size vs eigen centrality
+plot(cwDF$Freq,cwDF$Average_Eigen_Centrality)
+#Plotting significance vs eigen centrality
+plot(cwDF$significance,cwDF$Average_Eigen_Centrality)
+
+#Cluster Walk Plot
+plot(cw,simplePowerGrid, vertex.label = NA,vertex.size = 3)
+
+#Fast Greedy algorithm
+fg <- fastgreedy.community(simplePowerGrid)
+c.m <- membership(fg)
+
+dfFG <-as.data.frame(table(c.m, useNA = c("no")))
+
+#Loop identifies significance, degree, and eigen values
+sig_value <- vector()
+comDegree <- vector()
+comEigen <- vector()
+for( i in 1: length(fg)){
+  v_comp <- V(simplePowerGrid)[c.m==i]
+  cst <- community.significance.test(simplePowerGrid, v_comp)
+  sig_value <- append(sig_value,cst$p.value)
+  sub_graph <- induced_subgraph(simplePowerGrid,v_comp)
+  deg <- mean(degree(sub_graph))
+  comDegree <- append(comDegree,deg)
+  eig <- evcent(sub_graph)
+  eig <- mean(eig$vector)
+  comEigen <- append(comEigen,eig)
+}
+
+#assigning values to dataframe
+dfFG$significance <- sig_value
+dfFG$Average_Degree_Centrality <- comDegree
+dfFG$Average_Eigen_Centrality <- comEigen
+
+print(dfFG)
+dfFG[order(-dfFG$Average_Degree_Centrality),]
+dfFG[order(-dfFG$Average_Eigen_Centrality),]
+#plotting degree vs eigen values
+plot(dfFG$Average_Degree_Centrality,dfFG$Average_Eigen_Centrality , col="darkgreen", pch = 1, cex=1.5, xlab="Average Degree", ylab="Average Eigen")
+#Plotting community vs eigen score
+plot(dfFG$c.m,dfFG$Average_Eigen_Centrality, col="darkgreen", pch = 1, cex=1.5, xlab="C.M", ylab="Average Eigen")
+#Plotting community size vs eigen score
+plot(dfFG$Freq,dfFG$Average_Eigen_Centrality, col="darkgreen", pch = 1, cex=1.5, xlab="Community Size", ylab="Average Eigen")
+#Plotting Significance vs Eigen score
+plot(dfFG$significance,dfFG$Average_Eigen_Centrality, col="darkgreen", pch = 1, cex=1.5, xlab="Significance", ylab="Average Eigen")
+#Plotting community vs degree centrality
+plot(dfFG$c.m,dfFG$Average_Degree_Centrality, col="darkgreen", pch = 1, cex=1.5, xlab="C.M", ylab="Average Degree")
+
+#Fast Greedy Plot
+plot(fg,simplePowerGrid, vertex.label = NA,vertex.size = 3)
+
+#Spyglass 
+sp <- cluster_spinglass(simplePowerGrid)
+c.m <- membership(sp)
+
+#Creating the table for spinglass
+spDF <- as.data.frame(table(c.m, useNA = c("no")))
+
+#Loop identifies significance, degree, and eigen values
+sig_value <- vector()
+comDegree <- vector()
+comEigen <- vector()
+for( i in 1: length(sp)){
+  v_comp <- V(simplePowerGrid)[c.m==i]
+  cst <- community.significance.test(simplePowerGrid, v_comp)
+  sig_value <- append(sig_value,cst$p.value)
+  sub_graph <- induced_subgraph(simplePowerGrid,v_comp)
+  deg <- mean(degree(sub_graph))
+  comDegree <- append(comDegree,deg)
+  eig <- evcent(sub_graph)
+  eig <- mean(eig$vector)
+  comEigen <- append(comEigen,eig)
+}
+
+#adding values to dataframe
+print(sig_value)
+spDF$significance <- sig_value
+spDF$Average_Degree_Centrality <- comDegree
+spDF$Average_Eigen_Centrality <- comEigen
+
+
+print(spDF)
+spDF[order(-spDF$Average_Degree_Centrality),]
+spDF[order(-spDF$Average_Eigen_Centrality),]
+#Plotting degree vs eigen score
+plot(spDF$Average_Degree_Centrality,spDF$Average_Eigen_Centrality , col="darkgreen", pch = 1, cex=1.5, xlab="Average Degree", ylab="Average Eigen")
+#Plotting community vs eigen score
+plot(spDF$c.m,spDF$Average_Eigen_Centrality, col="darkgreen", pch = 1, cex=1.5, xlab="C.M", ylab="Average Eigen")
+#Plotting community size vs eigen scrore
+plot(spDF$Freq,spDF$Average_Eigen_Centrality, col="darkgreen", pch = 1, cex=1.5, xlab="Community Size", ylab="Average Eigen")
+#Plotting significance vs eigen score
+plot(spDF$significance,spDF$Average_Eigen_Centrality, col="darkgreen", pch = 1, cex=1.5, xlab="Significance", ylab="Average Eigen")
+#Plotting community vs degree
+plot(spDF$c.m,spDF$Average_Degree_Centrality, col="darkgreen", pch = 1, cex=1.5, xlab="C.M", ylab="Average Degree")
+
+
+#Spinglass plot
+plot(sp,simplePowerGrid, vertex.label = NA,vertex.size = 3)
+
+#Cluster Label Prop algorithm 
+clp <- cluster_label_prop(simplePowerGrid)
+c.m <- membership(clp)
+
+#Table for CLP Algorithm
+dfCLP <- as.data.frame(table(c.m, useNA = c("no")))
+
+#Loop identifies significance, degree, and eigen values
+sig_value <- vector()
+comDegree <- vector()
+comEigen <- vector()
+for( i in 1: length(clp)){
+  v_comp <- V(simplePowerGrid)[c.m==i]
+  cst <- community.significance.test(simplePowerGrid, v_comp)
+  sig_value <- append(sig_value,cst$p.value)
+  sub_graph <- induced_subgraph(simplePowerGrid,v_comp)
+  deg <- mean(degree(sub_graph))
+  comDegree <- append(comDegree,deg)
+  eig <- evcent(sub_graph)
+  eig <- mean(eig$vector)
+  comEigen <- append(comEigen,eig)
+}
+
+#Adding values to data frame
+print(cst)
+dfCLP$significance <- sig_value
+dfCLP$Average_Degree_Centrality <- comDegree
+dfCLP$Average_Eigen_Centrality <- comEigen
+
+print(dfCLP)
+dfCLP[order(-dfCLP$Average_Degree_Centrality),]
+dfCLP[order(-dfCLP$Average_Eigen_Centrality),]
+#Creates too many communities
+
+#Plotting degree vs eigen score
+plot(dfCLP$Average_Degree_Centrality,dfCLP$Average_Eigen_Centrality)
+#Plotting community vs eigen score
+plot(dfCLP$c.m,dfCLP$Average_Eigen_Centrality)
+#Plotting community size vs eigen score
+plot(dfCLP$Freq,dfCLP$Average_Eigen_Centrality)
+#Plotting significance vs eigen score
+plot(dfCLP$significance,dfCLP$Average_Eigen_Centrality)
+
+#Label Prop plot
+plot(clp,powerGrid, vertex.label = NA,vertex.size = 3)
+
+#Girvan Newman for right up
+gn <- cluster_edge_betweenness(simplePowerGrid)
+c.m <- membership(gn)
+
+#Table for gn Algorithm
+gnDF <- as.data.frame(table(c.m,  useNA = c("no")))
+
+#Loop identifies significance, degree, and eigen values
+sig_value <- vector()
+comDegree <- vector()
+comEigen <- vector()
+for( i in 1: length(gn)){
+  v_comp <- V(simplePowerGrid)[c.m==i]
+  cst <- community.significance.test(simplePowerGrid, v_comp)
+  sig_value <- append(sig_value,cst$p.value)
+  sub_graph <- induced_subgraph(simplePowerGrid,v_comp)
+  deg <- mean(degree(sub_graph))
+  comDegree <- append(comDegree,deg)
+  eig <- evcent(sub_graph)
+  eig <- mean(eig$vector)
+  comEigen <- append(comEigen,eig)
+}
+
+#Adding values to data frame
+print(sig_value)
+gnDF$significance <- sig_value
+gnDF$Average_Degree_Centrality <- comDegree
+gnDF$Average_Eigen_Centrality <- comEigen
+
+print(gnDF)
+gnDF[order(-gnDF$Average_Degree_Centrality),]
+gnDF[order(-gnDF$Average_Eigen_Centrality),]
+#Plotting degree vs eigen score
+plot(gnDF$Average_Degree_Centrality,gnDF$Average_Eigen_Centrality , col="darkgreen", pch = 1, cex=1.5, xlab="Average Degree", ylab="Average Eigen")
+#Plotting community vs Eigen score
+plot(gnDF$c.m,gnDF$Average_Eigen_Centrality, col="darkgreen", pch = 1, cex=1.5, xlab="C.M", ylab="Average Eigen")
+#Plotting community size vs eigen score
+plot(gnDF$Freq,gnDF$Average_Eigen_Centrality, col="darkgreen", pch = 1, cex=1.5, xlab="Community Size", ylab="Average Eigen")
+#Plotting significance vs eigen score
+plot(gnDF$significance,gnDF$Average_Eigen_Centrality, col="darkgreen", pch = 1, cex=1.5, xlab="Significance", ylab="Average Eigen")
+#Plotting community size vs degree
+plot(gnDF$c.m,gnDF$Average_Degree_Centrality, col="darkgreen", pch = 1, cex=1.5, xlab="C.M", ylab="Average Degree")
+
+#Girvan Newman plot
+plot(gn,simplePowerGrid, vertex.label = NA,vertex.size = 3)
+
+```
+```{r}
+#Comparison code using the primary school network from Onella et. al.
+#Onnela, J-P., Jari Saramäki, Jorkki Hyvönen, György Szabó, David Lazer, Kimmo Kaski, János Kertész, and A-L. Barabási. (2007). Structure and tie strengths in mobile #communication networks. Proceedings of the National Academy of Sciences, 104(18), 7332-7336
+#Use this to compare our power grid network
+
+#edge_frame<- read.csv2("data/Edges_sp_data_school_day_2.csv", header = TRUE, sep = ",")
+#node_frame <- read.csv2("data/Nodes_sp_data_school_day_2.csv", header = TRUE, sep = ",")
+
+g_primschool_orig<-graph.data.frame(edge_frame, directed = FALSE)
+
+#Clustering coefficent Local
+fullTrans <- transitivity(g_primschool_orig, type = c("local"), vids = NULL, weights = NULL, isolates = c("zero"))
+mean(fullTrans)
+
+#Clustering coefficent Global
+transitivity(g_primschool_orig, type = c("global"), vids = NULL, weights = NULL, isolates = c("zero"))
+
+#Betweeness of nodes
+fullBetween <- betweenness(g_primschool_orig, v=V(g_primschool_orig), directed = TRUE, nobigint= TRUE, normalized = TRUE)
+mean(fullBetween)
+print(mean(fullBetween))
+#Neighborhood overlap vs Betweeness
+plot(fullTrans,fullBetween, col="darkgreen", pch = 16, cex=1.5, xlab="Clustering Coefficient", ylab="Betweenness")
+#Log transformation
+plot(log(fullTrans), log(fullBetween),col="darkgreen", pch = 19, cex=1.5, xlab="Clustering Coefficient", ylab="Betweenness")
+
+#Highlighting nodes with eigen vectors greater than the median
+bigPG <- V(g_primschool_orig)[eigen > median(eigen)]
+length(bigPG)
+
+V(g_primschool_orig)[ bigPG ]$size <- 10
+V(g_primschool_orig)[ bigPG ]$color <- "yellow"
+plot(g_primschool_orig, vertex.label= NA,vertex.size=3, layout=layout.fruchterman.reingold, edge.color = "black")
+#Resetting the graph
+V(g_primschool_orig)$size = 3
+V(g_primschool_orig)$color = "black"
+#Highlighting nodes with eigen vectors greater than the mean
+bigPG <- V(g_primschool_orig)[eigen > mean(eigen)]
+length(bigPG)
+V(g_primschool_orig)[ bigPG ]$size <- 10
+V(g_primschool_orig)[ bigPG ]$color <- "yellow"
+plot(g_primschool_orig, vertex.label= NA,vertex.size=3, layout=layout.fruchterman.reingold, edge.color = "black")
+#Resetting the graph
+V(g_primschool_orig)$size = 3
+V(g_primschool_orig)$color = "black"
+
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
